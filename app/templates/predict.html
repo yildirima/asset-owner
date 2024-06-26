@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Predict Application Owner</title>
+</head>
+<body>
+   <h1>Predict Application Owner</h1>
+   <form action="/predict" method="post">
+       <label for="hostname">Hostname:</label>
+       <input type="text" id="hostname" name="hostname"><br><br>
+       <label for="ip">IP:</label>
+       <input type="text" id="ip" name="ip"><br><br>
+       <label for="location">Location:</label>
+       <input type="text" id="location" name="location"><br><br>
+       <label for="operating_system">Operating System:</label>
+       <input type="text" id="operating_system" name="operating_system"><br><br>
+       <label for="system_owner">System Owner:</label>
+       <input type="text" id="system_owner" name="system_owner"><br><br>
+       <input type="submit" value="Predict">
+   </form>
+   {% if prediction %}
+       <h2>Predicted Application Owner: {{ prediction }}</h2>
+   {% endif %}
+   <br>
+   <a href="/">Back to Upload</a>
+</body>
+</html>
