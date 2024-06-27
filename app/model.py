@@ -3,31 +3,44 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
 
-def train_model(data):
-   label_encoder = LabelEncoder()
-   data['location'] = label_encoder.fit_transform(data['location'])
-   data['operating_system'] = label_encoder.fit_transform(data['operating_system'])
-   data['system_owner'] = label_encoder.fit_transform(data['system_owner'])
+def train_models(data):
+   label_encoders = {
+       'location': LabelEncoder(),
+       'operating_system': LabelEncoder(),
+       'application_owner': LabelEncoder(),
+       'system_owner': LabelEncoder()
+   }
 
-   X = data.drop(['application_owner', 'hostname', 'ip'], axis=1)
-   y = data['application_owner']
-   y = label_encoder.fit_transform(y)
+   for column in label_encoders:
+       data[column] = label_encoders[column].fit_transform(data[column])
 
-   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+   X = data.drop(['system_owner', 'application_owner', 'hostname', 'ip'], axis=1)
+   y_system_owner = data['system_owner']
+   y_application_owner = data['application_owner']
 
-   model = RandomForestClassifier(n_estimators=100, random_state=42)
-   model.fit(X_train, y_train)
+   X_train_sys, X_test_sys, y_train_sys, y_test_sys = train_test_split(X, y_system_owner, test_size=0.2, random_state=42)
+   X_train_app, X_test_app, y_train_app, y_test_app = train_test_split(X, y_application_owner, test_size=0.2, random_state=42)
 
-   return model, label_encoder
+   system_owner_model = RandomForestClassifier(n_estimators=100, random_state=42)
+   system_owner_model.fit(X_train_sys, y_train_sys)
 
-def predict_application_owner(new_record, model, label_encoder):
+   application_owner_model = RandomForestClassifier(n_estimators=100, random_state=42)
+   application_owner_model.fit(X_train_app, y_train_app)
+
+   return system_owner_model, application_owner_model, label_encoders
+
+def predict_owners(new_record, system_owner_model, application_owner_model, label_encoders):
    new_record_transformed = new_record.copy()
-   new_record_transformed['location'] = label_encoder.transform([new_record['location']])[0]
-   new_record_transformed['operating_system'] = label_encoder.transform([new_record['operating_system']])[0]
-   new_record_transformed['system_owner'] = label_encoder.transform([new_record['system_owner']])[0]
+   for column in label_encoders:
+       if column in new_record_transformed:
+           new_record_transformed[column] = label_encoders[column].transform([new_record_transformed[column]])[0]
 
    new_record_transformed = pd.DataFrame([new_record_transformed]).drop(['hostname', 'ip'], axis=1)
 
-   prediction = model.predict(new_record_transformed)
-   predicted_owner = label_encoder.inverse_transform(prediction)
-   return predicted_owner[0]
+   system_owner_prediction = system_owner_model.predict(new_record_transformed)
+   application_owner_prediction = application_owner_model.predict(new_record_transformed)
+
+   predicted_system_owner = label_encoders['system_owner'].inverse_transform(system_owner_prediction)[0]
+   predicted_application_owner = label_encoders['application_owner'].inverse_transform(application_owner_prediction)[0]
+
+   return predicted_system_owner, predicted_application_owner
